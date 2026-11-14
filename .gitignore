@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+android/.gradle/
+android/build/
+android/app/build/
+firebase/firebase-config.js
+.env
+*.jks
+*.keystore
