@@ -2,13 +2,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function sameTenant(tenantId) {
-      return signedIn() && request.auth.token.tenantId == tenantId;
+    function isOwner() { return signedIn() && request.auth.uid == "wC4l6PFQA8csi1DZTwsQEMuwOAk1"; }
+    function profilePath(uid) {
+      return /databases/$(database)/documents/userProfiles/$(uid);
     }
-    match /tenants/{tenantId}/{document=**} {
-      allow read, write: if sameTenant(tenantId);
+    function isApproved(uid) {
+      return signedIn()
+        && exists(profilePath(uid))
+        && get(profilePath(uid)).data.status == "approved";
     }
-    // Default deny: collections must be deliberately modeled under /tenants/{tenantId}.
+
+    // User profile: users can create only their own pending request.
+    // Only the hard-coded trusted Owner UID can approve or change permissions.
+    match /userProfiles/{userId} {
+      allow read: if isOwner() || (signedIn() && request.auth.uid == userId);
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.status == "pending"
+        && request.resource.data.role == "pending"
+        && request.resource.data.permissions is map
+        && request.resource.data.keys().hasOnly([
+          "uid", "email", "requestedName", "displayName",
+          "status", "role", "permissions", "createdAt"
+        ]);
+      allow create, update, delete: if isOwner();
+    }
+
+    // Cloud backup: owner can manage backups; other users only their own
+    // backup after Owner approval.
+    match /users/{userId}/agency/{backupId} {
+      allow read: if isOwner() || (signedIn()
+        && request.auth.uid == userId
+        && backupId == "main"
+        && isApproved(userId));
+      allow create, update: if isOwner() || (signedIn()
+        && request.auth.uid == userId
+        && backupId == "main"
+        && isApproved(userId)
+        && request.resource.data.ownerUid == userId);
+      allow delete: if isOwner();
+    }
+
+    // Default deny for all other collections.
     match /{document=**} { allow read, write: if false; }
   }
 }

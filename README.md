@@ -1,37 +1,40 @@
-# Al Qadir Traders Sale Working
+# AL QADIR TRADERS — Sale System (v13)
 
-## Browser test
-Open `www/index.html` directly in Chrome/Edge. This is the single-file browser test build requested.
+## GitHub par upload karne ka tareeqa
+1. Is ZIP ko computer par **Extract** karein.
+2. Extract hone wale folder ke **andar ka sara content** select karein — `www`, `electron`, `.github`, `firebase`, `package.json`, etc.
+3. GitHub repository ke root mein ye tamam files/folders upload karein. `task` naam ka extra parent folder upload na karein.
+4. GitHub mein **Actions** tab kholein. `Build Android APK` ya `Build Windows EXE` workflow select karke **Run workflow** karein.
+5. Workflow complete hone par us run ke **Artifacts** section se APK/EXE download karein.
 
-## GitHub build outputs
-1. Upload the complete ZIP contents to a GitHub repository (extract the ZIP first; do not upload only the ZIP archive).
-2. Open **Actions** and run **Build Android APK** or **Build Windows EXE**.
-3. Download the generated artifact from the completed workflow run.
-4. A tag such as `v1.0.0` also triggers both workflows.
+## Current build
+- Existing AL QADIR TRADERS Sale System preserved.
+- Mobile responsive layout included for Android-sized screens.
+- Android (Capacitor) and Windows (Electron) packaging workflows included.
+- Report Logo Setup is under the existing locked **Other Settings** area.
+- Firebase Email/Password login and Owner approval foundation are included.
 
-## Important current scope
-- Android and Windows packaging workflows are scaffolded for GitHub Actions.
-- The current business app is still the existing browser-based app. Its current IndexedDB/localStorage data model is not yet migrated to authenticated Firestore.
-- Firebase configuration is a template only. Before enabling real multi-distributor accounts, create a Firebase project, enable Email/Password Authentication, register a Web App, and supply its public web config. Then the app's data layer and login screen must be migrated to tenant-scoped Firestore documents and tested with the rules.
-- The Firestore rules template expects a trusted `tenantId` custom claim. Do not deploy it until a trusted server/Admin process assigns that claim. Never let a client choose its own tenant claim.
-- Do not commit service-account JSON, private signing keys, passwords, or other secrets.
+## Important — Firebase cloud sync is NOT finished yet
+- Business records still use the existing browser/device-local IndexedDB/localStorage data model.
+- Firebase login and manual backup/restore foundation do **not** mean automatic multi-device synchronization.
+- Do not enter important live business data expecting it to appear automatically on another device until the cloud data migration is completed and tested.
+- The next development stage is to migrate all business data to authenticated, user/company-scoped Firestore storage, implement live updates and safe offline queueing, and enforce permissions in the data layer.
+- Existing Firestore Owner-approval rules were prepared separately. Do not replace published rules casually; confirm the final data model and security rules together during the Firebase stage.
 
-## Local build
-- Windows: `npm install` then `npm run desktop:build`
-- Android: `npm install`, `npx cap add android`, `npx cap sync android`, then build `android` with Gradle/Android Studio.
+## Local builds
+### Windows EXE
+```bash
+npm install
+npm run desktop:build
+```
+
+### Android APK (debug build)
+```bash
+npm install
+npx cap add android
+npx cap sync android
+```
+Then open/build the generated Android project with Android Studio/Gradle. GitHub Actions builds a debug APK artifact for testing; Play Store/release signing is a separate step.
 
 ## Data safety
-Keep a separate backup before replacing an existing live HTML file. The APK/EXE wrapper alone does not make browser-local data cloud-synced or protected from device loss.
-
-
-Browser tab branding: AL QADIR TRADERS. AQ monogram favicon is embedded in www/index.html and also available at www/assets/aq-favicon.png.
-
-
-## Firebase manual cloud backup integration
-- `www/firebase-config.js` contains the Firebase Web App config for `alqadirtarderssale`.
-- `www/firebase-cloud.js` adds Firebase email/password sign-in and explicit Upload Local Backup / Restore Cloud Backup actions.
-- Local IndexedDB/localStorage remains the primary working store. Automatic/background sync is intentionally not enabled.
-- Deploy `firebase/firestore.rules.ready-to-deploy` in Firebase Console → Firestore → Rules before using cloud backup. These rules allow each authenticated user to access only their own `/users/{uid}/agency/main` backup document.
-- The cloud backup is limited to 850 KB because Firestore documents have a 1 MiB maximum. Larger data sets are blocked safely and remain local; a chunked Cloud Storage/Firestore design will be needed for larger datasets.
-- Restore prompts for confirmation and downloads a local JSON safety backup before replacing current local business data. Test with a backup copy first.
-- This is not yet multi-device live synchronization or a tenant/distributor architecture. Do not share one login between distributors.
+Keep a backup of the current live data and existing GitHub repository before replacing files. Never commit service-account JSON, private signing keys, passwords, or other private secrets. Firebase web app config is client-side configuration; Firestore Security Rules must protect all business data.
