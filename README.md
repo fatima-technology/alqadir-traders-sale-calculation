@@ -25,3 +25,13 @@ Keep a separate backup before replacing an existing live HTML file. The APK/EXE 
 
 
 Browser tab branding: AL QADIR TRADERS. AQ monogram favicon is embedded in www/index.html and also available at www/assets/aq-favicon.png.
+
+
+## Firebase manual cloud backup integration
+- `www/firebase-config.js` contains the Firebase Web App config for `alqadirtarderssale`.
+- `www/firebase-cloud.js` adds Firebase email/password sign-in and explicit Upload Local Backup / Restore Cloud Backup actions.
+- Local IndexedDB/localStorage remains the primary working store. Automatic/background sync is intentionally not enabled.
+- Deploy `firebase/firestore.rules.ready-to-deploy` in Firebase Console → Firestore → Rules before using cloud backup. These rules allow each authenticated user to access only their own `/users/{uid}/agency/main` backup document.
+- The cloud backup is limited to 850 KB because Firestore documents have a 1 MiB maximum. Larger data sets are blocked safely and remain local; a chunked Cloud Storage/Firestore design will be needed for larger datasets.
+- Restore prompts for confirmation and downloads a local JSON safety backup before replacing current local business data. Test with a backup copy first.
+- This is not yet multi-device live synchronization or a tenant/distributor architecture. Do not share one login between distributors.
