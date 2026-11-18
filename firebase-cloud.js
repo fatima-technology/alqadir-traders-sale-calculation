@@ -5,13 +5,15 @@ import {
  signOut,setPersistence,browserLocalPersistence,updateProfile,sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
- getFirestore,doc,getDoc,setDoc,serverTimestamp,collection,getDocs,updateDoc
+ getFirestore,doc,getDoc,setDoc,serverTimestamp,collection,getDocs,updateDoc,onSnapshot
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const OWNER_UID="wC4l6PFQA8csi1DZTwsQEMuwOAk1";
 const $=id=>document.getElementById(id);
-let auth,dbCloud,currentUser=null,profile=null,firebaseReady=false;
+let auth,dbCloud,currentUser=null,profile=null,firebaseReady=false,liveUnsub=null,cloudWriteTimer=null,applyingCloud=false,liveSyncEnabled=false;
+const COMPANY_DATA_REF=()=>doc(dbCloud,'companies','al-qadir-traders','agency','main');
+const CLOUD_MAX_BYTES=850000;
 const statusEl=()=> $("aqCloudStatus");
 const say=(m,ok=false)=>{const e=statusEl();if(e){e.textContent=m;e.style.color=ok?'#137a49':'#b45309';}};
 const authMessage=(m,t='error')=>{const e=$('aqAuthMessage');if(e){e.textContent=m;e.className='aq-auth-message show '+t;}};
@@ -137,10 +139,63 @@ try{
    hideNotice();
   }
   const email=$('aqCloudSignedIn');if(email)email.textContent=user.email||'Signed in';
-  ['aqCloudUpload','aqCloudRestore','aqCloudSignOut'].forEach(id=>{const b=$(id);if(b)b.disabled=false;});
+  ['aqCloudUpload','aqCloudRestore','aqCloudSignOut','aqCloudLiveStart'].forEach(id=>{const b=$(id);if(b)b.disabled=false;});
+  if(user.uid!==OWNER_UID) startSharedCloudListener();
   say(user.uid===OWNER_UID?'Signed in as Main Owner. Full access.':'Approved user: '+(profile?.role||'User'),true);
  });
 }catch(e){console.error(e);setGate(true);authMessage('Firebase setup error: '+e.message);say('Firebase error: '+e.message);}
+async function startSharedCloudListener(){
+ if(!currentUser||profile?.status!=='approved'||liveUnsub)return;
+ try{
+  const ref=COMPANY_DATA_REF();
+  liveUnsub=onSnapshot(ref,async snap=>{
+   if(!snap.exists()){say('Shared cloud data abhi Owner ne initialize nahi kiya.');return;}
+   const payload=snap.data();
+   if(!payload||!payload.data||typeof payload.data!=='object')return;
+   if(payload.ownerUid!==OWNER_UID){say('Cloud data owner verification failed.');return;}
+   applyingCloud=true;
+   try{await window.AQ_REPLACE_LOCAL_DATA(payload.data);liveSyncEnabled=true;say('Shared cloud data connected · latest data loaded.',true);}
+   finally{applyingCloud=false;}
+  },e=>{console.error(e);say('Live cloud read failed: '+(e.code||e.message));});
+ }catch(e){say('Cloud listener failed: '+(e.code||e.message));}
+}
+window.aqStartLiveSync=async()=>{
+ if(!currentUser||currentUser.uid!==OWNER_UID||profile?.status!=='approved')return say('Shared cloud initialization sirf Main Owner kar sakta hai.');
+ const b=$('aqCloudLiveStart');if(b)b.disabled=true;
+ try{
+  await window.AQ_LOCAL_SAVE_READY;
+  const ref=COMPANY_DATA_REF(),existing=await getDoc(ref);
+  if(existing.exists()){
+   const d=existing.data();
+   if(d.ownerUid!==OWNER_UID)throw new Error('Cloud document owner mismatch.');
+   if(!confirm('Shared cloud data pehle se mojood hai. OK = cloud data is device par load karein. Cancel = kuch change na karein.'))return;
+   const local=window.AQ_EXPORT_LOCAL_DATA();
+   const blob=new Blob([JSON.stringify(local,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AL_QADIR_BEFORE_CLOUD_CONNECT.json';a.click();URL.revokeObjectURL(url);
+   applyingCloud=true;try{await window.AQ_REPLACE_LOCAL_DATA(d.data);}finally{applyingCloud=false;}
+  }else{
+   if(!confirm('Pehli dafa local data ko AL QADIR shared cloud par upload karna hai? Pehle local data ka export backup bhi download hoga.'))return;
+   const data=window.AQ_EXPORT_LOCAL_DATA(),json=JSON.stringify(data),bytes=new TextEncoder().encode(json).length;
+   if(bytes>CLOUD_MAX_BYTES)throw new Error('Data 850 KB se bara hai; single-document sync enable nahi ki ja sakti.');
+   const blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AL_QADIR_BEFORE_CLOUD_INITIALIZE.json';a.click();URL.revokeObjectURL(url);
+   await setDoc(ref,{schemaVersion:1,companyId:'al-qadir-traders',ownerUid:OWNER_UID,data,updatedAt:serverTimestamp(),clientUpdatedAt:new Date().toISOString(),updatedBy:currentUser.uid});
+  }
+  if(liveUnsub){liveUnsub();liveUnsub=null;}liveSyncEnabled=true;startSharedCloudListener();
+  say('Shared cloud connected. Keep this tab online while syncing.',true);
+ }catch(e){console.error(e);say('Cloud connect failed: '+(e.code||e.message));}
+ finally{if(b)b.disabled=false;}
+};
+window.AQ_CLOUD_SYNC_LOCAL=()=>{
+ if(applyingCloud||!liveSyncEnabled||!currentUser||profile?.status!=='approved')return;
+ clearTimeout(cloudWriteTimer);
+ cloudWriteTimer=setTimeout(async()=>{
+  try{
+   const data=window.AQ_EXPORT_LOCAL_DATA(),json=JSON.stringify(data),bytes=new TextEncoder().encode(json).length;
+   if(bytes>CLOUD_MAX_BYTES){say('Live sync paused: data 850 KB limit se bara hai.');return;}
+   await setDoc(COMPANY_DATA_REF(),{schemaVersion:1,companyId:'al-qadir-traders',ownerUid:OWNER_UID,data,updatedAt:serverTimestamp(),clientUpdatedAt:new Date().toISOString(),updatedBy:currentUser.uid});
+   say('All changes synced to shared cloud.',true);
+  }catch(e){console.error(e);say('Cloud sync failed: '+(e.code||e.message));}
+ },1200);
+};
 window.aqFirebaseLogout=()=>signOut(auth);
 window.aqFirebaseUpload=async()=>{
  if(!currentUser||profile?.status!=='approved')return say('Owner approval required.');

@@ -11,9 +11,33 @@ service cloud.firestore {
         && exists(profilePath(uid))
         && get(profilePath(uid)).data.status == "approved";
     }
+    function hasAnyWritePermission(uid) {
+      let p = get(profilePath(uid)).data.permissions;
+      return p.get("all", false) == true
+        || p.get("Sales", {}).get("add", false) == true
+        || p.get("Sales", {}).get("edit", false) == true
+        || p.get("Sales", {}).get("delete", false) == true
+        || p.get("Invoices", {}).get("add", false) == true
+        || p.get("Invoices", {}).get("edit", false) == true
+        || p.get("Invoices", {}).get("delete", false) == true
+        || p.get("Stock", {}).get("add", false) == true
+        || p.get("Stock", {}).get("edit", false) == true
+        || p.get("Stock", {}).get("delete", false) == true
+        || p.get("Market Credit", {}).get("add", false) == true
+        || p.get("Market Credit", {}).get("edit", false) == true
+        || p.get("Market Credit", {}).get("delete", false) == true
+        || p.get("Recovery", {}).get("add", false) == true
+        || p.get("Recovery", {}).get("edit", false) == true
+        || p.get("Recovery", {}).get("delete", false) == true
+        || p.get("Expenses", {}).get("add", false) == true
+        || p.get("Expenses", {}).get("edit", false) == true
+        || p.get("Expenses", {}).get("delete", false) == true
+        || p.get("User Management", {}).get("approve", false) == true
+        || p.get("Settings", {}).get("edit", false) == true
+        || p.get("Settings", {}).get("delete", false) == true;
+    }
 
-    // User profile: users can create only their own pending request.
-    // Only the hard-coded trusted Owner UID can approve or change permissions.
+    // Users can create only their own pending registration. Only Owner can approve/change profiles.
     match /userProfiles/{userId} {
       allow read: if isOwner() || (signedIn() && request.auth.uid == userId);
       allow create: if signedIn() && request.auth.uid == userId
@@ -27,8 +51,20 @@ service cloud.firestore {
       allow create, update, delete: if isOwner();
     }
 
-    // Cloud backup: owner can manage backups; other users only their own
-    // backup after Owner approval.
+    // Shared AL QADIR TRADERS company data. Owner controls initialization;
+    // approved users may read, and users with at least one write permission may write.
+    match /companies/al-qadir-traders/agency/main {
+      allow read: if isOwner() || isApproved(request.auth.uid);
+      allow create, update: if isOwner() || (
+        isApproved(request.auth.uid)
+        && hasAnyWritePermission(request.auth.uid)
+        && request.resource.data.ownerUid == "wC4l6PFQA8csi1DZTwsQEMuwOAk1"
+        && request.resource.data.companyId == "al-qadir-traders"
+      );
+      allow delete: if isOwner();
+    }
+
+    // Retain the existing per-user backup path for manual recovery.
     match /users/{userId}/agency/{backupId} {
       allow read: if isOwner() || (signedIn()
         && request.auth.uid == userId
@@ -42,7 +78,6 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // Default deny for all other collections.
     match /{document=**} { allow read, write: if false; }
   }
 }
