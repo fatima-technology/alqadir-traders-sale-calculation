@@ -2,5 +2,10 @@
   "appId": "com.alqadirtraders.saleworking",
   "appName": "Al Qadir Traders Sale Working",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://fatima-technology.github.io/alqadir-traders-sale-calculation/",
+    "cleartext": false,
+    "errorPath": "offline.html"
+  }
 }
