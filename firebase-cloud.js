@@ -2,7 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import {
  getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,
- signOut,setPersistence,browserLocalPersistence,updateProfile,sendPasswordResetEmail
+ signOut,setPersistence,browserLocalPersistence,updateProfile,sendPasswordResetEmail,
+ updatePassword,reauthenticateWithCredential,EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
  getFirestore,doc,getDoc,setDoc,serverTimestamp,collection,getDocs,updateDoc,onSnapshot
@@ -35,7 +36,7 @@ const err=e=>({
  'auth/weak-password':'Password kam az kam 6 characters ka hona chahiye.',
  'auth/invalid-email':'Email address durust nahi hai.',
  'auth/too-many-requests':'Bohat zyada attempts. Kuch dair baad koshish karein.',
- 'auth/network-request-failed':'Internet connection check karein.',
+ 'auth/network-request-failed':'Internet nahi hai. Pehli dafa login ke liye internet zaroori hai; uske baad system offline bhi chalta hai.',
  'auth/operation-not-allowed':'Firebase Console mein Email/Password enable karein.',
  'auth/user-disabled':'Ye account disable kar diya gaya hai.',
  'auth/user-not-found':'Is email par koi account nahi mila.',
@@ -143,22 +144,27 @@ try{
   if(!user){boot.done();setGate(true);hideNotice();$('aqOwnerOpen').style.display='none';return;}
   boot.show(2,loginFlow);loginFlow=false;setGate(false);
   if(user.uid===OWNER_UID){
-   const ref=doc(dbCloud,'userProfiles',user.uid),s=await getDoc(ref);
-   if(!s.exists())await setDoc(ref,{uid:user.uid,email:user.email,requestedName:user.displayName||'Owner',displayName:user.displayName||'Owner',status:'approved',role:'Owner',permissions:{all:true},createdAt:serverTimestamp(),approvedBy:OWNER_UID});
+   try{
+    if(navigator.onLine){const ref=doc(dbCloud,'userProfiles',user.uid),s=await getDoc(ref);
+    if(!s.exists())await setDoc(ref,{uid:user.uid,email:user.email,requestedName:user.displayName||'Owner',displayName:user.displayName||'Owner',status:'approved',role:'Owner',permissions:{all:true},createdAt:serverTimestamp(),approvedBy:OWNER_UID});}
+   }catch(e){console.warn('Owner profile check skipped (offline):',e&&e.code);}
    profile={status:'approved',role:'Owner',permissions:{all:true}};
    hideNotice();$('aqOwnerOpen').style.display='block';
   }else{
-   try{const s=await getDoc(doc(dbCloud,'userProfiles',user.uid));profile=s.exists()?s.data():null;}catch(e){console.error(e);}
+   const PK='aq_profile_'+user.uid;
+   try{if(!navigator.onLine)throw new Error('offline');const s=await getDoc(doc(dbCloud,'userProfiles',user.uid));profile=s.exists()?s.data():null;if(profile&&profile.status==='approved'){try{localStorage.setItem(PK,JSON.stringify({status:profile.status,role:profile.role,permissions:profile.permissions||{}}));}catch(_){}}else{try{localStorage.removeItem(PK);}catch(_){}}}
+   catch(e){try{const c=JSON.parse(localStorage.getItem(PK)||'null');if(c&&c.status==='approved')profile=c;}catch(_){}if(!profile)console.warn('Profile unavailable offline',e&&e.message);}
    $('aqOwnerOpen').style.display='none';
    if(!profile){showNotice('Registration Pending','Your account request is being registered. Please sign out and contact the Owner.');return;}
    if(profile.status!=='approved'){showNotice(profile.status==='suspended'?'Account Suspended':'Waiting for Owner Approval',profile.status==='suspended'?'Your account has been suspended. Contact the Owner.':'Your account has been created. The Owner must approve your account and assign your role before you can access business data.');return;}
    hideNotice();
   }
-  const email=$('aqCloudSignedIn');if(email)email.textContent=user.email||'Signed in';
+  const email=$('aqCloudSignedIn');if(email)email.textContent=user.email||'Signed in';const pwe=$('aqPwEmail');if(pwe)pwe.textContent='Account: '+(user.email||'');
   ['aqCloudUpload','aqCloudRestore','aqCloudSignOut','aqCloudLiveStart'].forEach(id=>{const b=$(id);if(b)b.disabled=false;});
-  if(user.uid!==OWNER_UID){boot.waitCloud();startSharedCloudListener();}
+  if(user.uid!==OWNER_UID){if(navigator.onLine)boot.waitCloud();else boot.done();startSharedCloudListener();}
   say(user.uid===OWNER_UID?'Signed in as Main Owner. Full access.':'Approved user: '+(profile?.role||'User'),true);
-  if(user.uid===OWNER_UID)boot.done();
+  if(user.uid===OWNER_UID){boot.done();if(navigator.onLine&&localStorage.getItem('aq_live_on')==='1')startSharedCloudListener();}
+  pill();
  });
 }catch(e){console.error(e);boot.done();setGate(true);authMessage('Firebase setup error: '+e.message);say('Firebase error: '+e.message);}
 async function startSharedCloudListener(){
@@ -166,10 +172,17 @@ async function startSharedCloudListener(){
  try{
   const ref=COMPANY_DATA_REF();
   liveUnsub=onSnapshot(ref,async snap=>{
+   if(snap.metadata&&snap.metadata.hasPendingWrites)return;
    if(!snap.exists()){say('Shared cloud data abhi Owner ne initialize nahi kiya.');boot.done();return;}
    const payload=snap.data();
    if(!payload||!payload.data||typeof payload.data!=='object'){boot.done();return;}
    if(payload.ownerUid!==OWNER_UID){say('Cloud data owner verification failed.');boot.done();return;}
+   if(isDirty()){
+    // Work was done on this device while offline: keep it, safe-copy the cloud version, then upload local changes.
+    try{localStorage.setItem('aq_cloud_copy_before_merge',JSON.stringify({savedAt:new Date().toISOString(),payload:payload.data}));}catch(_){}
+    liveSyncEnabled=true;boot.done();pushLocalToCloud('Offline changes cloud par sync ho gayi.');return;
+   }
+   try{if(JSON.stringify(window.AQ_EXPORT_LOCAL_DATA())===JSON.stringify(payload.data)){liveSyncEnabled=true;say('Shared cloud data connected · sab kuch up to date.',true);boot.done();return;}}catch(_){}
    applyingCloud=true;
    try{await window.AQ_REPLACE_LOCAL_DATA(payload.data);liveSyncEnabled=true;say('Shared cloud data connected · latest data loaded.',true);}
    finally{applyingCloud=false;boot.done();}
@@ -185,6 +198,13 @@ window.aqStartLiveSync=async()=>{
   if(existing.exists()){
    const d=existing.data();
    if(d.ownerUid!==OWNER_UID)throw new Error('Cloud document owner mismatch.');
+   if(isDirty()){
+    if(!confirm('Is device par offline changes hain jo cloud par nahi gaye. OK = ye changes cloud par upload honge (cloud ki purani copy pehle device par safe rakhi jayegi). Cancel = kuch change na karein.'))return;
+    safetyBackup('Offline changes cloud par bhejne se pehle');
+    try{localStorage.setItem('aq_cloud_copy_before_merge',JSON.stringify({savedAt:new Date().toISOString(),payload:d.data}));}catch(_){}
+    await pushLocalToCloud('Offline changes cloud par sync ho gayi.');
+    if(liveUnsub){liveUnsub();liveUnsub=null;}liveSyncEnabled=true;try{localStorage.setItem('aq_live_on','1');}catch(_){}startSharedCloudListener();return;
+   }
    if(!confirm('Shared cloud data pehle se mojood hai. OK = cloud data is device par load karein. Cancel = kuch change na karein.'))return;
    const local=window.AQ_EXPORT_LOCAL_DATA();
    const blob=new Blob([JSON.stringify(local,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AL_QADIR_BEFORE_CLOUD_CONNECT.json';a.click();URL.revokeObjectURL(url);
@@ -196,23 +216,76 @@ window.aqStartLiveSync=async()=>{
    const blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AL_QADIR_BEFORE_CLOUD_INITIALIZE.json';a.click();URL.revokeObjectURL(url);
    await setDoc(ref,{schemaVersion:1,companyId:'al-qadir-traders',ownerUid:OWNER_UID,data,updatedAt:serverTimestamp(),clientUpdatedAt:new Date().toISOString(),updatedBy:currentUser.uid});
   }
-  if(liveUnsub){liveUnsub();liveUnsub=null;}liveSyncEnabled=true;startSharedCloudListener();
+  if(liveUnsub){liveUnsub();liveUnsub=null;}liveSyncEnabled=true;try{localStorage.setItem('aq_live_on','1');}catch(_){}startSharedCloudListener();
   say('Shared cloud connected. Keep this tab online while syncing.',true);
  }catch(e){console.error(e);say('Cloud connect failed: '+(e.code||e.message));}
  finally{if(b)b.disabled=false;}
 };
+let localVer=0;
+const isDirty=()=>{try{return localStorage.getItem('aq_dirty')==='1';}catch(_){return false;}};
+const setDirty=v=>{try{v?localStorage.setItem('aq_dirty','1'):localStorage.removeItem('aq_dirty');}catch(_){}pill();};
+/* small status pill: always shows whether device changes are safely synced */
+function pill(flash){
+ let p=document.getElementById('aqSyncPill');
+ if(!p){p=document.createElement('div');p.id='aqSyncPill';p.style.cssText='position:fixed;left:12px;bottom:12px;z-index:9500;padding:7px 14px;border-radius:20px;font:700 12px Inter,system-ui,sans-serif;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none;pointer-events:none';document.body.appendChild(p);}
+ if(!currentUser){p.style.display='none';return;}
+ const off=!navigator.onLine,d=isDirty();
+ if(off){p.style.background=d?'#c2410c':'#475569';p.textContent=d?'● Offline — changes is device par safe hain':'● Offline mode';p.style.display='block';}
+ else if(d){p.style.background='#b45309';p.textContent='↻ Cloud sync ho raha hai…';p.style.display='block';}
+ else if(flash){p.style.background='#15803d';p.textContent='✓ Sab changes cloud par sync';p.style.display='block';clearTimeout(p._t);p._t=setTimeout(()=>{p.style.display='none';},3500);}
+ else p.style.display='none';
+}
+/* safety backups: before cloud data ever replaces local data, keep the device copy (last 2) */
+function safetyBackup(reason){
+ try{const data=window.AQ_EXPORT_LOCAL_DATA();let l=JSON.parse(localStorage.getItem('aq_safety_backups')||'[]');
+  l.unshift({t:new Date().toISOString(),reason,data});while(l.length>2)l.pop();
+  try{localStorage.setItem('aq_safety_backups',JSON.stringify(l));}catch(q){l.pop();localStorage.setItem('aq_safety_backups',JSON.stringify(l));}
+ }catch(e){console.warn('safety backup skipped',e&&e.name);}
+ window.aqListSafety&&window.aqListSafety();
+}
+if(typeof window.AQ_REPLACE_LOCAL_DATA==='function'&&!window.AQ_REPLACE_LOCAL_DATA.__wrapped){
+ const _rep=window.AQ_REPLACE_LOCAL_DATA;
+ window.AQ_REPLACE_LOCAL_DATA=async function(d){safetyBackup('Cloud data load hone se pehle ka device data');return _rep.call(this,d);};
+ window.AQ_REPLACE_LOCAL_DATA.__wrapped=true;
+}
+window.aqListSafety=()=>{
+ const box=document.getElementById('aqSafetyList');if(!box)return;
+ let l=[];try{l=JSON.parse(localStorage.getItem('aq_safety_backups')||'[]');}catch(_){}
+ box.innerHTML=l.length?l.map((b,i)=>'<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #eee"><span class="sub" style="margin:0">'+new Date(b.t).toLocaleString('en-GB')+' &middot; '+b.reason+'</span><button class="btn small secondary" type="button" onclick="aqRestoreSafety('+i+')">Restore this</button></div>').join(''):'<p class="sub">Abhi koi safety backup nahi hai. Cloud data device par load hone se pehle yahan khud save hota hai.</p>';
+};
+window.aqRestoreSafety=async i=>{
+ let l=[];try{l=JSON.parse(localStorage.getItem('aq_safety_backups')||'[]');}catch(_){}
+ const b=l[i];if(!b)return;
+ if(!confirm('Ye device backup ('+new Date(b.t).toLocaleString('en-GB')+') wapas laga dein? Abhi ka data pehle safety backup mein chala jayega.'))return;
+ await window.AQ_REPLACE_LOCAL_DATA(b.data);setDirty(true);window.AQ_CLOUD_SYNC_LOCAL&&window.AQ_CLOUD_SYNC_LOCAL();say('Device backup restore ho gaya.',true);
+};
+
+async function pushLocalToCloud(okMsg){
+ const ver=localVer;
+ const data=window.AQ_EXPORT_LOCAL_DATA(),json=JSON.stringify(data),bytes=new TextEncoder().encode(json).length;
+ if(bytes>CLOUD_MAX_BYTES){say('Live sync paused: data 850 KB limit se bara hai.');return;}
+ await setDoc(COMPANY_DATA_REF(),{schemaVersion:1,companyId:'al-qadir-traders',ownerUid:OWNER_UID,data,updatedAt:serverTimestamp(),clientUpdatedAt:new Date().toISOString(),updatedBy:currentUser.uid});
+ if(ver===localVer){setDirty(false);pill(true);say(okMsg||'All changes synced to shared cloud.',true);}
+ else{say('Naye changes aa gaye, dobara sync ho raha hai…');clearTimeout(cloudWriteTimer);cloudWriteTimer=setTimeout(()=>pushLocalToCloud().catch(e=>say('Cloud sync failed: '+(e.code||e.message))),800);}
+}
 window.AQ_CLOUD_SYNC_LOCAL=()=>{
- if(applyingCloud||!liveSyncEnabled||!currentUser||profile?.status!=='approved')return;
+ if(applyingCloud)return;
+ localVer++;setDirty(true);
+ if(!navigator.onLine){say('Offline: changes is device par save hain, internet aate hi cloud par sync ho jayengi.');return;}
+ if(!liveSyncEnabled||!currentUser||profile?.status!=='approved')return;
  clearTimeout(cloudWriteTimer);
  cloudWriteTimer=setTimeout(async()=>{
-  try{
-   const data=window.AQ_EXPORT_LOCAL_DATA(),json=JSON.stringify(data),bytes=new TextEncoder().encode(json).length;
-   if(bytes>CLOUD_MAX_BYTES){say('Live sync paused: data 850 KB limit se bara hai.');return;}
-   await setDoc(COMPANY_DATA_REF(),{schemaVersion:1,companyId:'al-qadir-traders',ownerUid:OWNER_UID,data,updatedAt:serverTimestamp(),clientUpdatedAt:new Date().toISOString(),updatedBy:currentUser.uid});
-   say('All changes synced to shared cloud.',true);
-  }catch(e){console.error(e);say('Cloud sync failed: '+(e.code||e.message));}
+  try{await pushLocalToCloud();}catch(e){console.error(e);say('Cloud sync failed: '+(e.code||e.message));}
  },1200);
 };
+window.addEventListener('online',()=>{
+ if(!currentUser||profile?.status!=='approved')return;
+ say('Internet wapas aa gaya.',true);
+ if(isDirty()&&liveSyncEnabled){pushLocalToCloud('Offline changes cloud par sync ho gayi.').catch(e=>say('Cloud sync failed: '+(e.code||e.message)));}
+ else if(!liveUnsub&&(currentUser.uid!==OWNER_UID?true:localStorage.getItem('aq_live_on')==='1'))startSharedCloudListener();
+ pill();
+});
+window.addEventListener('offline',()=>{say('Offline mode: system chal raha hai, data is device par save ho raha hai.');pill();});
 window.aqFirebaseLogout=()=>signOut(auth);
 window.aqFirebaseUpload=async()=>{
  if(!currentUser||profile?.status!=='approved')return say('Owner approval required.');
@@ -229,4 +302,28 @@ window.aqFirebaseRestore=async()=>{
  const local=window.AQ_EXPORT_LOCAL_DATA(),blob=new Blob([JSON.stringify(local,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AL_QADIR_BEFORE_RESTORE.json';a.click();URL.revokeObjectURL(url);
  await window.AQ_REPLACE_LOCAL_DATA(s.data().data);say('Cloud restore complete. Safety backup downloaded.',true);
  }catch(e){say('Cloud restore failed: '+(e.code||e.message));}
+};
+
+window.aqChangePassword=async()=>{
+ const st=$('aqPwStatus'),set=(m,ok)=>{if(st){st.textContent=m;st.style.color=ok?'#067647':'#b42318';}};
+ if(!currentUser)return set('Pehle sign in karein.');
+ if(!navigator.onLine)return set('Password badalne ke liye internet zaroori hai.');
+ const cur=$('aqPwCurrent').value,n1=$('aqPwNew').value,n2=$('aqPwConfirm').value;
+ if(!cur||!n1)return set('Current aur new password enter karein.');
+ if(n1.length<8)return set('Naya password kam az kam 8 characters ka ho.');
+ if(n1!==n2)return set('New password aur confirm password match nahi karte.');
+ if(n1===cur)return set('Naya password purane password se different ho.');
+ const b=$('aqPwBtn');if(b)b.disabled=true;
+ try{
+  await reauthenticateWithCredential(currentUser,EmailAuthProvider.credential(currentUser.email,cur));
+  await updatePassword(currentUser,n1);
+  ['aqPwCurrent','aqPwNew','aqPwConfirm'].forEach(i=>{const e=$(i);if(e)e.value='';});
+  set('Password kamyabi se change ho gaya.',true);
+ }catch(e){set((e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')?'Current password ghalat hai.':err(e));}
+ finally{if(b)b.disabled=false;}
+};
+window.aqSendResetLink=async()=>{
+ const st=$('aqPwStatus');
+ try{if(!currentUser)throw new Error('Pehle sign in karein.');await sendPasswordResetEmail(auth,currentUser.email);if(st){st.textContent='Reset link '+currentUser.email+' par bhej diya gaya hai.';st.style.color='#067647';}}
+ catch(e){if(st){st.textContent=e.code?err(e):e.message;st.style.color='#b42318';}}
 };
