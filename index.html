@@ -608,10 +608,105 @@ tr:hover td{background:#fff8f8}
 @media print{header,aside,.btn{box-shadow:none!important}}
 </style>
 
+
+<style id="aq-auth-v2">
+/* ===== AL QADIR login v2: split screen + animated sales graph ===== */
+#aqAuthGate{display:grid!important;grid-template-columns:minmax(0,1.18fr) minmax(380px,.82fr);padding:0!important;gap:0;align-items:stretch;justify-content:stretch;overflow:auto;
+ background:radial-gradient(circle at 85% 12%,rgba(244,0,9,.08),transparent 40%),radial-gradient(circle at 10% 95%,rgba(244,0,9,.07),transparent 40%),#fff6f5!important}
+#aqAuthGate[hidden]{display:none!important}
+.aqv-hero{position:relative;overflow:hidden;padding:42px 46px;display:flex;flex-direction:column;justify-content:center;gap:22px;color:#fff;
+ background:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.22),transparent 45%),linear-gradient(150deg,#6f0010 0%,#b3001a 42%,#f40009 100%)}
+.aqv-hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 2px,transparent 2px 26px);pointer-events:none}
+.aqv-bubbles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.aqv-bubbles i,.aqb-bubbles i{position:absolute;bottom:-60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.55),rgba(255,255,255,.08) 60%);border:1px solid rgba(255,255,255,.28);animation:aqvRise linear infinite}
+@keyframes aqvRise{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:.9}100%{transform:translateY(-115vh) translateX(26px);opacity:0}}
+.aqv-pill{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:1.6px;padding:7px 14px;border-radius:30px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(4px);position:relative;z-index:1}
+.aqv-hero h2{position:relative;z-index:1;margin:0;font-size:clamp(28px,3.4vw,46px);line-height:1.08;font-weight:900;letter-spacing:.3px}
+.aqv-hero h2 span{display:block;color:#ffd9dc;font-size:.52em;font-weight:600;letter-spacing:.5px;margin-top:10px}
+.aqv-card{position:relative;z-index:1;border-radius:22px;padding:20px 20px 16px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);box-shadow:0 22px 50px rgba(60,0,8,.35);max-width:560px;animation:aqvFloat 6s ease-in-out infinite}
+@keyframes aqvFloat{50%{transform:translateY(-7px)}}
+.aqv-card-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:6px}
+.aqv-card-top small{font-weight:600;opacity:.75;font-size:11px;background:rgba(0,0,0,.18);padding:3px 9px;border-radius:20px}
+.aqv-chart{width:100%;height:auto;display:block;overflow:visible}
+.aqv-chart .grid{stroke:rgba(255,255,255,.2);stroke-width:1;stroke-dasharray:3 5}
+.aqv-chart .line{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1000;stroke-dashoffset:1000;animation:aqvDraw 2.4s .3s ease forwards;filter:drop-shadow(0 4px 8px rgba(0,0,0,.28))}
+.aqv-chart .area{fill:url(#aqvGrad);opacity:0;animation:aqvFade 1.2s 1.6s ease forwards}
+.aqv-chart .bar{fill:rgba(255,255,255,.28);transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:aqvBar .8s ease forwards}
+.aqv-chart .dot{fill:#fff;opacity:0;animation:aqvFade .4s 2.5s forwards}
+.aqv-chart .pulse{fill:none;stroke:#fff;stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center;animation:aqvPulse 2s 2.6s ease-out infinite}
+.aqv-chart text{fill:rgba(255,255,255,.8);font:600 10px Inter,system-ui,sans-serif}
+@keyframes aqvDraw{to{stroke-dashoffset:0}}@keyframes aqvFade{to{opacity:1}}@keyframes aqvBar{to{transform:scaleY(1)}}
+@keyframes aqvPulse{0%{opacity:.9;transform:scale(.6)}100%{opacity:0;transform:scale(2.6)}}
+.aqv-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.aqv-kpi{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 12px}
+.aqv-kpi b{display:block;font-size:clamp(14px,1.5vw,19px);font-weight:900;letter-spacing:.2px}
+.aqv-kpi span{font-size:10.5px;opacity:.8;font-weight:600}
+.aqv-note{position:relative;z-index:1;font-size:11px;opacity:.7;margin:-8px 0 0}
+/* right side form */
+.aq-auth-shell{align-self:center;justify-self:center;width:min(100%,440px)!important;margin:26px 20px;animation:aqvIn .7s ease both}
+@keyframes aqvIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.aq-auth-glow{display:none!important}
+.aq-auth-card{box-shadow:0 24px 60px rgba(176,0,32,.16),0 2px 0 #f40009 inset!important;border:1px solid #f3d6d8!important;border-top:4px solid #F40009!important}
+.aq-auth-logo{animation:aqvLogo 3.5s ease-in-out infinite}
+@keyframes aqvLogo{50%{box-shadow:0 0 0 9px rgba(244,0,9,.08),0 5px 18px rgba(244,0,9,.25)}}
+.aq-auth-submit{transition:transform .15s,box-shadow .15s}.aq-auth-submit:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(244,0,9,.32)!important}
+@media(max-width:940px){
+ #aqAuthGate{grid-template-columns:1fr;grid-auto-rows:auto}
+ .aqv-hero{padding:22px 18px 26px;gap:14px}.aqv-hero h2{font-size:24px}.aqv-hero h2 span{display:none}.aqv-kpis,.aqv-note{display:none}
+ .aqv-card{padding:14px 14px 8px;animation:none;max-width:none}
+ .aq-auth-shell{margin:18px auto 26px;padding:0 14px}
+}
+@media(prefers-reduced-motion:reduce){.aqv-card,.aq-auth-logo,.aqv-bubbles i,.aqb-bubbles i{animation:none!important}.aqv-chart .line{stroke-dashoffset:0;animation:none}.aqv-chart .area,.aqv-chart .dot{opacity:1;animation:none}.aqv-chart .bar{transform:none;animation:none}}
+/* ===== Firebase boot / post-login loader ===== */
+#aqBoot{position:fixed;inset:0;z-index:1000001;display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden;opacity:1;transition:opacity .45s ease;
+ background:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.2),transparent 45%),linear-gradient(150deg,#6f0010,#c8001a 55%,#f40009)}
+#aqBoot.done{opacity:0;pointer-events:none}
+.aqb-bubbles{position:absolute;inset:0;pointer-events:none}
+.aqb-box{position:relative;z-index:1;width:min(420px,100%);text-align:center}
+.aqb-ring{position:relative;width:104px;height:104px;margin:0 auto 22px;display:grid;place-items:center}
+.aqb-ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:4px solid rgba(255,255,255,.22);border-top-color:#fff;animation:aqbSpin 1s linear infinite}
+.aqb-ring::after{content:"";position:absolute;inset:11px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-bottom-color:#ffd0d4;animation:aqbSpin 1.6s linear infinite reverse}
+.aqb-ring b{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#d90010;font-size:24px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:aqbBeat 1.6s ease-in-out infinite}
+@keyframes aqbSpin{to{transform:rotate(360deg)}}@keyframes aqbBeat{50%{transform:scale(1.07)}}
+.aqb-box h2{margin:0 0 6px;font-size:20px;font-weight:800;letter-spacing:.3px}
+.aqb-box p{margin:0 0 20px;font-size:13px;opacity:.82}
+.aqb-bar{height:8px;border-radius:10px;background:rgba(0,0,0,.25);overflow:hidden}
+.aqb-bar i{display:block;height:100%;width:6%;border-radius:10px;background:linear-gradient(90deg,#fff,#ffd0d4);transition:width .7s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 14px rgba(255,255,255,.6)}
+.aqb-steps{list-style:none;margin:18px 0 0;padding:0;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.aqb-steps li{font-size:11.5px;font-weight:700;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.18);opacity:.6;transition:.3s}
+.aqb-steps li.on{opacity:1;background:rgba(255,255,255,.22);border-color:#fff}
+.aqb-steps li.ok{opacity:1;background:rgba(255,255,255,.95);color:#b00020;border-color:#fff}
+.aqb-steps li.ok::before{content:"✓ "}
+#aqbRetry{display:none;margin-top:18px;padding:11px 24px;border:0;border-radius:30px;background:#fff;color:#c20012;font-weight:800;cursor:pointer}
+</style>
 </head>
 <body>
 
 <div id="aqAuthGate" hidden>
+
+  <aside class="aqv-hero" aria-hidden="true">
+    <div class="aqv-bubbles" id="aqvBubbles"></div>
+    <div class="aqv-pill">COCA-COLA AUTHORIZED DISTRIBUTOR</div>
+    <h2>Sale &bull; Stock &bull; Recovery<span>Poore business ka hisaab, ek hi jagah.</span></h2>
+    <div class="aqv-card">
+      <div class="aqv-card-top"><span>Weekly Sales Trend</span><small>Preview</small></div>
+      <svg class="aqv-chart" viewBox="0 0 440 170" role="img">
+        <defs><linearGradient id="aqvGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+        <line class="grid" x1="0" y1="30" x2="440" y2="30"/><line class="grid" x1="0" y1="75" x2="440" y2="75"/><line class="grid" x1="0" y1="120" x2="440" y2="120"/>
+        <g id="aqvBars"></g>
+        <path class="area" d="M10,118 C45,108 62,70 105,78 S165,116 205,72 S275,28 315,52 S390,22 430,30 L430,140 L10,140 Z"/>
+        <path class="line" d="M10,118 C45,108 62,70 105,78 S165,116 205,72 S275,28 315,52 S390,22 430,30"/>
+        <circle class="dot" cx="430" cy="30" r="5"/><circle class="pulse" cx="430" cy="30" r="7"/>
+        <text x="4" y="162">Mon</text><text x="68" y="162">Tue</text><text x="132" y="162">Wed</text><text x="196" y="162">Thu</text><text x="260" y="162">Fri</text><text x="324" y="162">Sat</text><text x="394" y="162">Sun</text>
+      </svg>
+      <div class="aqv-kpis">
+        <div class="aqv-kpi"><b data-count="482500" data-prefix="Rs. ">0</b><span>Today's Sale</span></div>
+        <div class="aqv-kpi"><b data-count="126300" data-prefix="Rs. ">0</b><span>Recovery</span></div>
+        <div class="aqv-kpi"><b data-count="1840">0</b><span>Stock (Cartons)</span></div>
+      </div>
+    </div>
+    <p class="aqv-note">Demo preview &mdash; asli figures login ke baad dashboard par milenge.</p>
+  </aside>
   <div class="aq-auth-shell">
     <div class="aq-auth-glow"></div>
     <div class="aq-auth-card">
@@ -664,6 +759,29 @@ tr:hover td{background:#fff8f8}
 </div>
 
 
+
+<div id="aqBoot" role="status" aria-live="polite">
+  <div class="aqb-bubbles" id="aqbBubbles"></div>
+  <div class="aqb-box">
+    <div class="aqb-ring"><b>AQ</b></div>
+    <h2 id="aqbTitle">Firebase se connect ho raha hai…</h2>
+    <p id="aqbSub">Secure connection ban rahi hai</p>
+    <div class="aqb-bar"><i id="aqbFill"></i></div>
+    <ul class="aqb-steps"><li data-s="1" class="on">Connect</li><li data-s="2">Account verify</li><li data-s="3">Data load</li></ul>
+    <button id="aqbRetry" type="button" onclick="location.reload()">Dobara koshish karein</button>
+  </div>
+</div>
+<script>
+(function(){
+ function bubbles(id,n){var h=document.getElementById(id);if(!h)return;for(var i=0;i<n;i++){var b=document.createElement('i'),z=8+Math.random()*34;b.style.cssText='left:'+(Math.random()*100)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+(7+Math.random()*9)+'s;animation-delay:-'+(Math.random()*12)+'s';h.appendChild(b);}}
+ bubbles('aqvBubbles',16);bubbles('aqbBubbles',14);
+ var bars=document.getElementById('aqvBars'),hs=[48,70,58,86,64,102,92],x=0;
+ if(bars){hs.forEach(function(v,i){var r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('class','bar');r.setAttribute('x',4+i*62);r.setAttribute('y',140-v);r.setAttribute('width',40);r.setAttribute('height',v);r.setAttribute('rx',6);r.style.animationDelay=(0.15*i)+'s';bars.appendChild(r);});}
+ var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+ document.querySelectorAll('[data-count]').forEach(function(el){var to=+el.dataset.count,pre=el.dataset.prefix||'',t0=null;function f(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/1800);el.textContent=pre+Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('en-US');if(p<1)requestAnimationFrame(f);}reduce?el.textContent=pre+to.toLocaleString('en-US'):requestAnimationFrame(f);});
+ setTimeout(function(){var b=document.getElementById('aqBoot');if(b&&!b.classList.contains('done')){var t=document.getElementById('aqbTitle'),sb=document.getElementById('aqbSub'),r=document.getElementById('aqbRetry');if(t)t.textContent='Connection slow hai';if(sb)sb.textContent='Internet check karein, phir dobara koshish karein';if(r)r.style.display='inline-block';}},15000);
+})();
+</script>
 <div id="nsSaveToast" role="status" aria-live="polite"><span class="check">✓</span><span>Entry Successfully Saved!</span></div>
 <header>
  <div class="brand"><div class="logo" id="headerLogo">AQ</div><div><h1 id="headerCompany">COCA-COLA AGENCY</h1><p id="headerDistributor">Daily Distribution • Settlement • Cash Control</p></div></div>

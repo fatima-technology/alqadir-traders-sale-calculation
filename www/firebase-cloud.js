@@ -15,6 +15,16 @@ let auth,dbCloud,currentUser=null,profile=null,firebaseReady=false,liveUnsub=nul
 const COMPANY_DATA_REF=()=>doc(dbCloud,'companies','al-qadir-traders','agency','main');
 const CLOUD_MAX_BYTES=850000;
 const statusEl=()=> $("aqCloudStatus");
+const boot=(()=>{const el=$('aqBoot');if(!el)return{show(){},step(){},waitCloud(){},done(){}};
+ const T={1:['Firebase se connect ho raha hai…','Secure connection ban rahi hai',22],2:['Account verify ho raha hai…','Aapki pehchan check ho rahi hai',58],3:['Business data load ho raha hai…','Sale, stock aur recovery tayyar ho rahi hai',88]};
+ let t0=Date.now(),timer=null,fb=null;
+ const set=n=>{const [a,b,p]=T[n];$('aqbTitle').textContent=a;$('aqbSub').textContent=b;$('aqbFill').style.width=p+'%';el.querySelectorAll('.aqb-steps li').forEach(li=>{const s=+li.dataset.s;li.className=s<n?'ok':s===n?'on':'';});};
+ return{
+  show(n=1){clearTimeout(timer);clearTimeout(fb);t0=Date.now();el.style.display='flex';void el.offsetWidth;el.classList.remove('done');set(n);},
+  step:set,
+  waitCloud(){set(3);clearTimeout(fb);fb=setTimeout(()=>boot.done(),8000);},
+  done(){clearTimeout(fb);if(el.classList.contains('done'))return;$('aqbFill').style.width='100%';el.querySelectorAll('.aqb-steps li').forEach(li=>li.className='ok');const wait=Math.max(0,450-(Date.now()-t0));clearTimeout(timer);timer=setTimeout(()=>{el.classList.add('done');setTimeout(()=>{if(el.classList.contains('done'))el.style.display='none';},500);},wait);}
+ };})();
 const say=(m,ok=false)=>{const e=statusEl();if(e){e.textContent=m;e.style.color=ok?'#137a49':'#b45309';}};
 const authMessage=(m,t='error')=>{const e=$('aqAuthMessage');if(e){e.textContent=m;e.className='aq-auth-message show '+t;}};
 const clearMsg=()=>{const e=$('aqAuthMessage');if(e){e.textContent='';e.className='aq-auth-message';}};
@@ -25,12 +35,17 @@ const err=e=>({
  'auth/invalid-email':'Email address durust nahi hai.',
  'auth/too-many-requests':'Bohat zyada attempts. Kuch dair baad koshish karein.',
  'auth/network-request-failed':'Internet connection check karein.',
- 'auth/operation-not-allowed':'Firebase Console mein Email/Password enable karein.'
+ 'auth/operation-not-allowed':'Firebase Console mein Email/Password enable karein.',
+ 'auth/user-disabled':'Ye account disable kar diya gaya hai.',
+ 'auth/user-not-found':'Is email par koi account nahi mila.',
+ 'auth/wrong-password':'Email ya password ghalat hai.',
+ 'auth/api-key-not-valid.-please-pass-a-valid-api-key.':'Firebase API key ghalat hai — firebase-config.js check karein.'
 }[e.code]||e.message||'Authentication error.');
 function setGate(v){const g=$('aqAuthGate');if(g)g.hidden=!v;document.body.style.overflow=v?'hidden':'';}
 function mode(m){const l=m==='login';$('aqAuthLoginForm').hidden=!l;$('aqAuthRegisterForm').hidden=l;$('aqAuthTabLogin').classList.toggle('active',l);$('aqAuthTabRegister').classList.toggle('active',!l);clearMsg();}
 function busy(id,v){const b=$(id);if(!b)return;if(v){b.dataset.old=b.textContent;b.textContent='Please wait…';b.disabled=true;}else{b.textContent=b.dataset.old||b.textContent;b.disabled=false;delete b.dataset.old;}}
 function showNotice(title,detail,showSignout=true){
+ boot.done();
  let el=$('aqAccessNotice');if(!el){el=document.createElement('div');el.id='aqAccessNotice';el.style.cssText='position:fixed;inset:0;z-index:999998;background:linear-gradient(135deg,#07122e,#160b38);display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;font-family:system-ui';document.body.appendChild(el);}
  el.innerHTML=`<div style="width:min(440px,100%);padding:30px;border:1px solid #4269a8;border-radius:20px;background:#101d43;text-align:center;box-shadow:0 0 35px #006caa55"><div style="font-size:38px;margin-bottom:12px">🔐</div><h2 style="margin:0 0 10px">${title}</h2><p style="color:#c5d5f4;line-height:1.6">${detail}</p>${showSignout?'<button id="aqNoticeLogout" style="margin-top:15px;padding:12px 24px;border:0;border-radius:30px;background:linear-gradient(90deg,#773cff,#00bfe5);color:white;font-weight:700;cursor:pointer">Sign Out</button>':''}</div>`;
  el.style.display='flex';$('aqNoticeLogout')?.addEventListener('click',()=>signOut(auth));
@@ -124,8 +139,8 @@ try{
  addOwnerPanel();
  onAuthStateChanged(auth,async user=>{
   currentUser=user||null;profile=null;
-  if(!user){setGate(true);hideNotice();$('aqOwnerOpen').style.display='none';return;}
-  setGate(false);
+  if(!user){boot.done();setGate(true);hideNotice();$('aqOwnerOpen').style.display='none';return;}
+  boot.show(2);setGate(false);
   if(user.uid===OWNER_UID){
    const ref=doc(dbCloud,'userProfiles',user.uid),s=await getDoc(ref);
    if(!s.exists())await setDoc(ref,{uid:user.uid,email:user.email,requestedName:user.displayName||'Owner',displayName:user.displayName||'Owner',status:'approved',role:'Owner',permissions:{all:true},createdAt:serverTimestamp(),approvedBy:OWNER_UID});
@@ -140,23 +155,24 @@ try{
   }
   const email=$('aqCloudSignedIn');if(email)email.textContent=user.email||'Signed in';
   ['aqCloudUpload','aqCloudRestore','aqCloudSignOut','aqCloudLiveStart'].forEach(id=>{const b=$(id);if(b)b.disabled=false;});
-  if(user.uid!==OWNER_UID) startSharedCloudListener();
+  if(user.uid!==OWNER_UID){boot.waitCloud();startSharedCloudListener();}
   say(user.uid===OWNER_UID?'Signed in as Main Owner. Full access.':'Approved user: '+(profile?.role||'User'),true);
+  if(user.uid===OWNER_UID)boot.done();
  });
-}catch(e){console.error(e);setGate(true);authMessage('Firebase setup error: '+e.message);say('Firebase error: '+e.message);}
+}catch(e){console.error(e);boot.done();setGate(true);authMessage('Firebase setup error: '+e.message);say('Firebase error: '+e.message);}
 async function startSharedCloudListener(){
  if(!currentUser||profile?.status!=='approved'||liveUnsub)return;
  try{
   const ref=COMPANY_DATA_REF();
   liveUnsub=onSnapshot(ref,async snap=>{
-   if(!snap.exists()){say('Shared cloud data abhi Owner ne initialize nahi kiya.');return;}
+   if(!snap.exists()){say('Shared cloud data abhi Owner ne initialize nahi kiya.');boot.done();return;}
    const payload=snap.data();
-   if(!payload||!payload.data||typeof payload.data!=='object')return;
-   if(payload.ownerUid!==OWNER_UID){say('Cloud data owner verification failed.');return;}
+   if(!payload||!payload.data||typeof payload.data!=='object'){boot.done();return;}
+   if(payload.ownerUid!==OWNER_UID){say('Cloud data owner verification failed.');boot.done();return;}
    applyingCloud=true;
    try{await window.AQ_REPLACE_LOCAL_DATA(payload.data);liveSyncEnabled=true;say('Shared cloud data connected · latest data loaded.',true);}
-   finally{applyingCloud=false;}
-  },e=>{console.error(e);say('Live cloud read failed: '+(e.code||e.message));});
+   finally{applyingCloud=false;boot.done();}
+  },e=>{console.error(e);say('Live cloud read failed: '+(e.code||e.message));boot.done();});
  }catch(e){say('Cloud listener failed: '+(e.code||e.message));}
 }
 window.aqStartLiveSync=async()=>{
