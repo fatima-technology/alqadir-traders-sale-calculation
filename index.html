@@ -662,6 +662,7 @@ tr:hover td{background:#fff8f8}
  background:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.2),transparent 45%),linear-gradient(150deg,#6f0010,#c8001a 55%,#f40009)}
 #aqBoot.done{opacity:0;pointer-events:none}
 #aqBoot.quiet .aqb-box,#aqBoot.quiet .aqb-bubbles{display:none}
+#aqBoot.quiet{background:transparent;pointer-events:none}
 .aqb-bubbles{position:absolute;inset:0;pointer-events:none}
 .aqb-box{position:relative;z-index:1;width:min(420px,100%);text-align:center}
 .aqb-ring{position:relative;width:104px;height:104px;margin:0 auto 22px;display:grid;place-items:center}
@@ -795,7 +796,8 @@ tr:hover td{background:#fff8f8}
   window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
   navigator.serviceWorker.addEventListener('controllerchange',function(){if(!hadCtl&&!sessionStorage.getItem('aqSwWarm')){sessionStorage.setItem('aqSwWarm','1');location.reload();}});
  }
- setTimeout(function(){var b=document.getElementById('aqBoot');if(b&&!b.classList.contains('done')){b.classList.remove('quiet');var t=document.getElementById('aqbTitle'),sb=document.getElementById('aqbSub'),r=document.getElementById('aqbRetry');if(t)t.textContent='Connection slow hai';if(sb)sb.textContent='Internet check karein, phir dobara koshish karein';if(r)r.style.display='inline-block';}},15000);
+ // Removed fixed 15-second warning: elapsed time alone does not prove a failed connection.
+
 })();
 </script>
 <div id="nsSaveToast" role="status" aria-live="polite"><span class="check">✓</span><span>Entry Successfully Saved!</span></div>
@@ -1358,7 +1360,7 @@ function openProfileDetails(){document.getElementById('profileMenu')?.classList.
 function saveAQProfile(){const name=(document.getElementById('aqProfileName')?.value||'').trim();const designation=(document.getElementById('aqProfileDesignation')?.value||'').trim();if(!name||!designation){alert('Display Name aur Designation dono enter karein.');return}try{localStorage.setItem(AQ_PROFILE_KEY,JSON.stringify({name,designation}));applyAQProfile();closeProfileDetails();alert('Profile save ho gaya. Dashboard name plate update ho gayi.')}catch(e){alert('Profile save nahi hua: '+e.message)}}
 
 function closeProfileDetails(){document.getElementById('profileModal')?.classList.remove('show')}
-function handleSignOut(){document.getElementById('profileMenu')?.classList.remove('show');alert('Is local browser build mein user authentication/login configured nahi hai. Is liye secure sign-out tabhi enable hoga jab login accounts add kiye jayen. Aapka data safe hai.')}
+async function handleSignOut(){document.getElementById('profileMenu')?.classList.remove('show');document.getElementById('profileTrigger')?.setAttribute('aria-expanded','false');try{if(typeof window.aqFirebaseLogout==='function'){await window.aqFirebaseLogout();}const gate=document.getElementById('aqAuthGate');if(gate){gate.hidden=false;document.body.style.overflow='hidden';}}catch(e){alert('Logout failed: '+(e&&e.message?e.message:'Please try again.'));}}
 const THEME_PACK_KEY='aq_theme_pack_v1';
 function applyThemePack(t){if(!t)return;const root=document.documentElement;root.style.setProperty('--red',t.primary||'#b51f35');root.style.setProperty('--aq-border',t.border||'#ead6d3');root.style.setProperty('--aq-surface',t.surface||'#fff');document.body.style.fontFamily=t.font||'Inter,Segoe UI,Arial,sans-serif';document.body.style.fontSize=t.fontSize||'14px';document.querySelectorAll('.panel,.menu-group,.nav,.menu-toggle,.btn').forEach(el=>{el.style.borderStyle=t.borderStyle||'solid';el.style.borderColor=t.border||'#ead6d3';el.style.borderRadius=t.radius||'16px'});document.querySelectorAll('.nav span,.menu-toggle span').forEach(el=>{el.classList.toggle('aq-icon-badge',t.iconStyle==='rounded');el.classList.toggle('aq-icon-minimal',t.iconStyle==='minimal')});}
 function readThemeControls(){return {font:document.getElementById('themeFont')?.value,fontSize:document.getElementById('themeFontSize')?.value,primary:document.getElementById('themePrimary')?.value,surface:document.getElementById('themeSurface')?.value,border:document.getElementById('themeBorder')?.value,borderStyle:document.getElementById('themeBorderStyle')?.value,radius:document.getElementById('themeRadius')?.value,iconStyle:document.getElementById('themeIconStyle')?.value}}
