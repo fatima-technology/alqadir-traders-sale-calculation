@@ -15,15 +15,16 @@ let auth,dbCloud,currentUser=null,profile=null,firebaseReady=false,liveUnsub=nul
 const COMPANY_DATA_REF=()=>doc(dbCloud,'companies','al-qadir-traders','agency','main');
 const CLOUD_MAX_BYTES=850000;
 const statusEl=()=> $("aqCloudStatus");
+let loginFlow=false;
 const boot=(()=>{const el=$('aqBoot');if(!el)return{show(){},step(){},waitCloud(){},done(){}};
  const T={1:['Firebase se connect ho raha hai…','Secure connection ban rahi hai',22],2:['Account verify ho raha hai…','Aapki pehchan check ho rahi hai',58],3:['Business data load ho raha hai…','Sale, stock aur recovery tayyar ho rahi hai',88]};
  let t0=Date.now(),timer=null,fb=null;
  const set=n=>{const [a,b,p]=T[n];$('aqbTitle').textContent=a;$('aqbSub').textContent=b;$('aqbFill').style.width=p+'%';el.querySelectorAll('.aqb-steps li').forEach(li=>{const s=+li.dataset.s;li.className=s<n?'ok':s===n?'on':'';});};
  return{
-  show(n=1){clearTimeout(timer);clearTimeout(fb);t0=Date.now();el.style.display='flex';void el.offsetWidth;el.classList.remove('done');set(n);},
+  show(n=1,loud=false){clearTimeout(timer);clearTimeout(fb);t0=Date.now();el.classList.toggle('quiet',!loud);el.style.display='flex';void el.offsetWidth;el.classList.remove('done');set(n);},
   step:set,
   waitCloud(){set(3);clearTimeout(fb);fb=setTimeout(()=>boot.done(),8000);},
-  done(){clearTimeout(fb);if(el.classList.contains('done'))return;$('aqbFill').style.width='100%';el.querySelectorAll('.aqb-steps li').forEach(li=>li.className='ok');const wait=Math.max(0,450-(Date.now()-t0));clearTimeout(timer);timer=setTimeout(()=>{el.classList.add('done');setTimeout(()=>{if(el.classList.contains('done'))el.style.display='none';},500);},wait);}
+  done(){clearTimeout(fb);if(el.classList.contains('done'))return;$('aqbFill').style.width='100%';el.querySelectorAll('.aqb-steps li').forEach(li=>li.className='ok');const wait=el.classList.contains('quiet')?0:Math.max(0,450-(Date.now()-t0));clearTimeout(timer);timer=setTimeout(()=>{el.classList.add('done');setTimeout(()=>{if(el.classList.contains('done'))el.style.display='none';},500);},wait);}
  };})();
 const say=(m,ok=false)=>{const e=statusEl();if(e){e.textContent=m;e.style.color=ok?'#137a49':'#b45309';}};
 const authMessage=(m,t='error')=>{const e=$('aqAuthMessage');if(e){e.textContent=m;e.className='aq-auth-message show '+t;}};
@@ -112,14 +113,14 @@ $('aqAuthTabRegister')?.addEventListener('click',()=>mode('register'));
 $('aqAuthGoRegister')?.addEventListener('click',()=>mode('register'));
 $('aqAuthGoLogin')?.addEventListener('click',()=>mode('login'));
 document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const i=$(b.dataset.toggle);if(i){i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'Show':'Hide';}}));
-$('aqAuthLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');busy('aqAuthLoginSubmit',true);try{await signInWithEmailAndPassword(auth,$('aqAuthLoginEmail').value.trim(),$('aqAuthLoginPassword').value);$('aqAuthLoginPassword').value='';}catch(x){authMessage(err(x));}finally{busy('aqAuthLoginSubmit',false);}});
+$('aqAuthLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');loginFlow=true;busy('aqAuthLoginSubmit',true);try{await signInWithEmailAndPassword(auth,$('aqAuthLoginEmail').value.trim(),$('aqAuthLoginPassword').value);$('aqAuthLoginPassword').value='';}catch(x){loginFlow=false;authMessage(err(x));}finally{busy('aqAuthLoginSubmit',false);}});
 $('aqAuthRegisterForm')?.addEventListener('submit',async e=>{
  e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');
  const name=$('aqAuthFullName').value.trim(),email=$('aqAuthRegisterEmail').value.trim(),pw=$('aqAuthRegisterPassword').value,cp=$('aqAuthConfirmPassword').value;
  if(name.length<2)return authMessage('Full name kam az kam 2 characters ka hona chahiye.');
  if(pw.length<6)return authMessage('Password minimum 6 characters hona chahiye.');
  if(pw!==cp)return authMessage('Password aur Confirm Password match nahi karte.');
- busy('aqAuthRegisterSubmit',true);
+ loginFlow=true;busy('aqAuthRegisterSubmit',true);
  try{
   const c=await createUserWithEmailAndPassword(auth,email,pw);await updateProfile(c.user,{displayName:name});
   if(c.user.uid===OWNER_UID){
@@ -129,7 +130,7 @@ $('aqAuthRegisterForm')?.addEventListener('submit',async e=>{
   }
   $('aqAuthRegisterPassword').value='';$('aqAuthConfirmPassword').value='';
   authMessage(c.user.uid===OWNER_UID?'Owner account initialized.':'Account created. Owner approval required before system access.','ok');
- }catch(x){authMessage(err(x));}finally{busy('aqAuthRegisterSubmit',false);}
+ }catch(x){loginFlow=false;authMessage(err(x));}finally{busy('aqAuthRegisterSubmit',false);}
 });
 $('aqAuthForgot')?.addEventListener('click',async()=>{clearMsg();const email=$('aqAuthLoginEmail').value.trim();if(!email)return authMessage('Pehle email enter karein.');try{await sendPasswordResetEmail(auth,email);authMessage('Password reset email bhej di gayi hai.','ok');}catch(e){authMessage(err(e));}});
 
@@ -140,7 +141,7 @@ try{
  onAuthStateChanged(auth,async user=>{
   currentUser=user||null;profile=null;
   if(!user){boot.done();setGate(true);hideNotice();$('aqOwnerOpen').style.display='none';return;}
-  boot.show(2);setGate(false);
+  boot.show(2,loginFlow);loginFlow=false;setGate(false);
   if(user.uid===OWNER_UID){
    const ref=doc(dbCloud,'userProfiles',user.uid),s=await getDoc(ref);
    if(!s.exists())await setDoc(ref,{uid:user.uid,email:user.email,requestedName:user.displayName||'Owner',displayName:user.displayName||'Owner',status:'approved',role:'Owner',permissions:{all:true},createdAt:serverTimestamp(),approvedBy:OWNER_UID});

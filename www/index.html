@@ -661,6 +661,7 @@ tr:hover td{background:#fff8f8}
 #aqBoot{position:fixed;inset:0;z-index:1000001;display:flex;align-items:center;justify-content:center;padding:20px;color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden;opacity:1;transition:opacity .45s ease;
  background:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.2),transparent 45%),linear-gradient(150deg,#6f0010,#c8001a 55%,#f40009)}
 #aqBoot.done{opacity:0;pointer-events:none}
+#aqBoot.quiet .aqb-box,#aqBoot.quiet .aqb-bubbles{display:none}
 .aqb-bubbles{position:absolute;inset:0;pointer-events:none}
 .aqb-box{position:relative;z-index:1;width:min(420px,100%);text-align:center}
 .aqb-ring{position:relative;width:104px;height:104px;margin:0 auto 22px;display:grid;place-items:center}
@@ -760,7 +761,7 @@ tr:hover td{background:#fff8f8}
 
 
 
-<div id="aqBoot" role="status" aria-live="polite">
+<div id="aqBoot" class="quiet" role="status" aria-live="polite">
   <div class="aqb-bubbles" id="aqbBubbles"></div>
   <div class="aqb-box">
     <div class="aqb-ring"><b>AQ</b></div>
@@ -779,7 +780,7 @@ tr:hover td{background:#fff8f8}
  if(bars){hs.forEach(function(v,i){var r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('class','bar');r.setAttribute('x',4+i*62);r.setAttribute('y',140-v);r.setAttribute('width',40);r.setAttribute('height',v);r.setAttribute('rx',6);r.style.animationDelay=(0.15*i)+'s';bars.appendChild(r);});}
  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
  document.querySelectorAll('[data-count]').forEach(function(el){var to=+el.dataset.count,pre=el.dataset.prefix||'',t0=null;function f(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/1800);el.textContent=pre+Math.round(to*(1-Math.pow(1-p,3))).toLocaleString('en-US');if(p<1)requestAnimationFrame(f);}reduce?el.textContent=pre+to.toLocaleString('en-US'):requestAnimationFrame(f);});
- setTimeout(function(){var b=document.getElementById('aqBoot');if(b&&!b.classList.contains('done')){var t=document.getElementById('aqbTitle'),sb=document.getElementById('aqbSub'),r=document.getElementById('aqbRetry');if(t)t.textContent='Connection slow hai';if(sb)sb.textContent='Internet check karein, phir dobara koshish karein';if(r)r.style.display='inline-block';}},15000);
+ setTimeout(function(){var b=document.getElementById('aqBoot');if(b&&!b.classList.contains('done')){b.classList.remove('quiet');var t=document.getElementById('aqbTitle'),sb=document.getElementById('aqbSub'),r=document.getElementById('aqbRetry');if(t)t.textContent='Connection slow hai';if(sb)sb.textContent='Internet check karein, phir dobara koshish karein';if(r)r.style.display='inline-block';}},15000);
 })();
 </script>
 <div id="nsSaveToast" role="status" aria-live="polite"><span class="check">✓</span><span>Entry Successfully Saved!</span></div>
