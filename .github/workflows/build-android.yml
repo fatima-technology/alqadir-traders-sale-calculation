@@ -14,6 +14,11 @@ jobs:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21' }
       - uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
       - name: Install Android SDK packages
         shell: bash
         run: |
@@ -26,13 +31,17 @@ jobs:
       - name: Build debug APK
         shell: bash
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log
+        run: set -o pipefail; ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee ../build.log
       - name: Show exact error (only if build failed)
         if: failure()
         shell: bash
         run: |
           echo "=========== ERROR SUMMARY ==========="
-          grep -n -i -B2 -A10 "What went wrong\|FAILURE:\|error:" build.log | tail -n 150 || tail -n 100 build.log
+          if [ -f build.log ]; then
+            grep -n -i -B2 -A10 "What went wrong\|FAILURE:\|error:" build.log | tail -n 150 || tail -n 100 build.log
+          else
+            echo "build.log was not created; failure occurred before Gradle build."
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
