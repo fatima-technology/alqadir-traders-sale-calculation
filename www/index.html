@@ -662,6 +662,7 @@ tr:hover td{background:#fff8f8}
  background:radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.2),transparent 45%),linear-gradient(150deg,#6f0010,#c8001a 55%,#f40009)}
 #aqBoot.done{opacity:0;pointer-events:none}
 #aqBoot.quiet .aqb-box,#aqBoot.quiet .aqb-bubbles{display:none}
+#aqBoot.quiet{background:transparent;pointer-events:none}
 .aqb-bubbles{position:absolute;inset:0;pointer-events:none}
 .aqb-box{position:relative;z-index:1;width:min(420px,100%);text-align:center}
 .aqb-ring{position:relative;width:104px;height:104px;margin:0 auto 22px;display:grid;place-items:center}
@@ -688,6 +689,44 @@ tr:hover td{background:#fff8f8}
 .set-pane{display:none}.set-pane.on{display:block}.set-pane>.panel,.set-pane>.grid2{margin-bottom:16px}
 .rlt{position:absolute;cursor:move;outline:1px dashed #1d4ed8;background:rgba(219,234,254,.55);touch-action:none;white-space:nowrap;transform-origin:0 0;color:#17324d;padding:0 2px;user-select:none}
 #rlHdrRows table{width:100%;border-collapse:collapse}#rlHdrRows td,#rlHdrRows th{padding:5px 6px;text-align:left;font-size:12px}#rlHdrRows input{width:84px}
+/* Android-only compact drawer navigation: desktop rules remain unchanged */
+@media(max-width:950px) and (pointer:coarse){
+ #aqMobileMenuButton{display:inline-flex!important;align-items:center;justify-content:center;width:44px;height:44px;flex:0 0 44px;border:1px solid #ffffff55;border-radius:12px;background:#ffffff18;color:#fff;font-size:23px;line-height:1;cursor:pointer}
+ header{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:10px!important;padding:12px!important}
+ header .brand{flex:1 1 auto!important;min-width:0!important;gap:9px!important}
+ header .brand h1{font-size:clamp(13px,4vw,16px)!important;line-height:1.15!important}
+ header .brand p{font-size:10px!important;line-height:1.25!important}
+ header .logo{width:40px!important;height:40px!important;flex:0 0 40px!important}
+ header .header-right{flex:1 1 100%!important;width:100%!important;display:flex!important;align-items:center!important;gap:8px!important}
+ header .header-right label{font-size:10px!important;white-space:nowrap!important}
+ header .header-right input{flex:1 1 auto!important;min-width:0!important;width:0!important;padding:9px 8px!important;font-size:14px!important}
+ .app{display:block!important;min-height:0!important;grid-template-columns:1fr!important}
+ aside.menu-rail{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:7px!important;position:fixed!important;left:0!important;top:0!important;bottom:0!important;width:min(82vw,310px)!important;height:100dvh!important;min-height:0!important;padding:12px!important;overflow-x:hidden!important;overflow-y:auto!important;background:#fff!important;border:0!important;border-right:1px solid #e6eaf0!important;box-shadow:14px 0 36px #14223430!important;z-index:10020!important;transform:translateX(-110%)!important;transition:transform .24s ease!important;overscroll-behavior:contain!important
+ }
+ body.aq-mobile-menu-open aside.menu-rail{transform:translateX(0)!important}
+ #aqMobileDrawerTop{display:flex!important;align-items:center;justify-content:space-between;gap:10px;padding:5px 4px 12px;margin-bottom:3px;border-bottom:1px solid #e9edf2;color:#9f152c;font-weight:800;font-size:15px}
+ #aqMobileDrawerClose{display:inline-flex!important;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:11px;background:#fff0f2;color:#a8102d;font-size:23px}
+ #aqMobileDrawerBackdrop{display:block!important;position:fixed!important;inset:0!important;background:#101b2b65!important;z-index:10010!important;opacity:0!important;visibility:hidden!important;transition:opacity .2s,visibility .2s!important}
+ body.aq-mobile-menu-open #aqMobileDrawerBackdrop{opacity:1!important;visibility:visible!important}
+ aside.menu-rail .home-nav{width:100%!important;white-space:normal!important;margin:0!important;min-height:48px!important}
+ aside.menu-rail .menu-group{width:100%!important;min-width:0!important;margin:0!important;position:static!important;border-radius:12px!important}
+ aside.menu-rail .menu-toggle{width:100%!important;min-height:48px!important;height:auto!important;max-height:none!important;flex:0 0 auto!important;white-space:normal!important;padding:12px!important;font-size:13px!important}
+ aside.menu-rail .menu-options{display:none!important;position:static!important;top:auto!important;left:auto!important;width:100%!important;max-height:none!important;overflow:visible!important;padding:5px 7px 9px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;transform:none!important}
+ aside.menu-rail .menu-group.open .menu-options{display:grid!important;animation:none!important}
+ aside.menu-rail .nav{width:100%!important;white-space:normal!important;min-height:44px!important;padding:11px 10px!important;margin:2px 0!important;font-size:12px!important;transform:none!important;box-shadow:none!important}
+ aside.menu-rail .nav span{width:24px!important;min-width:24px!important;margin-right:4px!important}
+ main{padding:10px!important;min-width:0!important;width:100%!important;max-width:none!important}
+ .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .metric{min-width:0!important;padding:11px!important;overflow-wrap:anywhere!important}
+ .metric .v{font-size:clamp(16px,4.7vw,20px)!important;overflow-wrap:anywhere!important}
+ .panel{min-width:0!important;max-width:100%!important}
+}
+@media(max-width:420px) and (pointer:coarse){
+ header .brand p{max-width:210px!important}
+ .cards{grid-template-columns:1fr 1fr!important}
+ .metric .v{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){@media(max-width:950px) and (pointer:coarse){aside.menu-rail,#aqMobileDrawerBackdrop{transition:none!important}}}
 </style>
 </head>
 <body>
@@ -795,11 +834,13 @@ tr:hover td{background:#fff8f8}
   window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
   navigator.serviceWorker.addEventListener('controllerchange',function(){if(!hadCtl&&!sessionStorage.getItem('aqSwWarm')){sessionStorage.setItem('aqSwWarm','1');location.reload();}});
  }
- setTimeout(function(){var b=document.getElementById('aqBoot');if(b&&!b.classList.contains('done')){b.classList.remove('quiet');var t=document.getElementById('aqbTitle'),sb=document.getElementById('aqbSub'),r=document.getElementById('aqbRetry');if(t)t.textContent='Connection slow hai';if(sb)sb.textContent='Internet check karein, phir dobara koshish karein';if(r)r.style.display='inline-block';}},15000);
+ // Removed fixed 15-second warning: elapsed time alone does not prove a failed connection.
+
 })();
 </script>
 <div id="nsSaveToast" role="status" aria-live="polite"><span class="check">✓</span><span>Entry Successfully Saved!</span></div>
 <header>
+ <button id="aqMobileMenuButton" type="button" aria-label="Open navigation menu" title="Menu" style="display:none" onclick="openMobileDrawer()">☰</button>
  <div class="brand"><div class="logo" id="headerLogo">AQ</div><div><h1 id="headerCompany">COCA-COLA AGENCY</h1><p id="headerDistributor">Daily Distribution • Settlement • Cash Control</p></div></div>
  <div class="header-right"><label style="font-size:11px">Working date</label><input type="date" id="workDate"><div class="profile-wrap"><button type="button" class="profile-trigger profile-icon-only" id="profileTrigger" aria-label="User profile menu" title="Profile" aria-expanded="false" onclick="toggleProfileMenu()"><span class="profile-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a4.25 4.25 0 1 0 0-8.5A4.25 4.25 0 0 0 12 12Zm0 2c-4.15 0-7.5 2.13-7.5 4.75V21h15v-2.25C19.5 16.13 16.15 14 12 14Z"/></svg></span></button><div class="profile-menu" id="profileMenu"><button type="button" onclick="openProfileDetails()"><span class="aq-profile-menu-icon">●</span> &nbsp; Profile</button><button type="button" onclick="handleSignOut()">⇥ &nbsp; Logout</button></div></div></div>
 </header>
@@ -808,8 +849,10 @@ tr:hover td{background:#fff8f8}
  <div><span class="carry-label">TODAY’S CLOSING / CARRY-FORWARD CASH</span><strong id="carryCurrentValue">Rs. 0.00</strong></div>
  <small id="carryBalanceDate">Working date</small>
 </div>
+<div id="aqMobileDrawerBackdrop" style="display:none" onclick="closeMobileDrawer()" aria-hidden="true"></div>
 <div class="app">
 <aside class="menu-rail">
+ <div id="aqMobileDrawerTop" style="display:none"><span>AL QADIR TRADERS MENU</span><button id="aqMobileDrawerClose" type="button" aria-label="Close menu" onclick="closeMobileDrawer()">×</button></div>
  <button class="nav active home-nav" data-page="dashboard"><span>▦</span>Dashboard</button>
  <div class="menu-group"><button class="menu-toggle" type="button" aria-expanded="false"><span>✚</span> Daily Entry <i>⌄</i></button><div class="menu-options">
  <button class="nav" data-page="vehicles"><span>🚚</span>Vehicle / Daily Sale Entry</button>
@@ -1323,6 +1366,9 @@ const fg=card.querySelector('#aqPinForgot');if(fg)fg.addEventListener('click',()
 async function openHiddenSettings(){if(__hiddenSettingsBusy)return;__hiddenSettingsBusy=true;try{let code=await aqPinModal('time');if(code===null)return;if(db.security?.pastEditPinHash){if(aqPinLockedMsg())return;let pin=await aqPinModal('pin',{len:db.security.pinLen,forgot:true,verify:aqCheckOwnerPin,afterFail:aqPinLockedMsg});if(pin===null)return;window.__pastDateEditAuthorized=true;}else{let ok=confirm('Owner PIN abhi set nahi hai. Pehli dafa Settings open karke foran secret PIN set karein.');if(!ok)return;}let b=document.querySelector('[data-page="settings"]');if(b)b.click();}finally{__hiddenSettingsBusy=false;}}
 function setupHiddenSettingsAccess(){let logo=document.getElementById('headerLogo');if(!logo)return;logo.style.cursor='pointer';logo.title='';logo.addEventListener('click',()=>{let now=Date.now();__hiddenSettingsClicks=__hiddenSettingsClicks.filter(t=>now-t<4500);__hiddenSettingsClicks.push(now);if(__hiddenSettingsClicks.length>=7){__hiddenSettingsClicks=[];openHiddenSettings();}});}
 document.querySelectorAll('.menu-toggle').forEach(t=>t.addEventListener('click',()=>{const g=t.closest('.menu-group');const opening=!g.classList.contains('open');document.querySelectorAll('.menu-group').forEach(x=>{x.classList.remove('open');x.querySelector('.menu-toggle')?.setAttribute('aria-expanded','false')});if(opening){g.classList.add('open');t.setAttribute('aria-expanded','true')}}));
+function openMobileDrawer(){if(innerWidth<=950){document.body.classList.add('aq-mobile-menu-open');document.getElementById('aqMobileMenuButton')?.setAttribute('aria-expanded','true')}}
+function closeMobileDrawer(){document.body.classList.remove('aq-mobile-menu-open');document.getElementById('aqMobileMenuButton')?.setAttribute('aria-expanded','false')}
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileDrawer()});
 function activateNavigationPage(b){
  const apply=()=>{
   document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
@@ -1332,6 +1378,7 @@ function activateNavigationPage(b){
   if(page)page.classList.add('active');
   if(b.dataset.reportType){const rt=document.getElementById('reportType');if(rt){rt.value=b.dataset.reportType;buildReport();}}
   renderAll();
+  closeMobileDrawer();
   window.scrollTo({top:0,behavior:'smooth'});
   if(innerWidth<=950)b.closest('.menu-group')?.classList.remove('open');
  };
@@ -1358,7 +1405,7 @@ function openProfileDetails(){document.getElementById('profileMenu')?.classList.
 function saveAQProfile(){const name=(document.getElementById('aqProfileName')?.value||'').trim();const designation=(document.getElementById('aqProfileDesignation')?.value||'').trim();if(!name||!designation){alert('Display Name aur Designation dono enter karein.');return}try{localStorage.setItem(AQ_PROFILE_KEY,JSON.stringify({name,designation}));applyAQProfile();closeProfileDetails();alert('Profile save ho gaya. Dashboard name plate update ho gayi.')}catch(e){alert('Profile save nahi hua: '+e.message)}}
 
 function closeProfileDetails(){document.getElementById('profileModal')?.classList.remove('show')}
-function handleSignOut(){document.getElementById('profileMenu')?.classList.remove('show');alert('Is local browser build mein user authentication/login configured nahi hai. Is liye secure sign-out tabhi enable hoga jab login accounts add kiye jayen. Aapka data safe hai.')}
+async function handleSignOut(){document.getElementById('profileMenu')?.classList.remove('show');document.getElementById('profileTrigger')?.setAttribute('aria-expanded','false');try{if(typeof window.aqFirebaseLogout==='function'){await window.aqFirebaseLogout();}const gate=document.getElementById('aqAuthGate');if(gate){gate.hidden=false;document.body.style.overflow='hidden';}}catch(e){alert('Logout failed: '+(e&&e.message?e.message:'Please try again.'));}}
 const THEME_PACK_KEY='aq_theme_pack_v1';
 function applyThemePack(t){if(!t)return;const root=document.documentElement;root.style.setProperty('--red',t.primary||'#b51f35');root.style.setProperty('--aq-border',t.border||'#ead6d3');root.style.setProperty('--aq-surface',t.surface||'#fff');document.body.style.fontFamily=t.font||'Inter,Segoe UI,Arial,sans-serif';document.body.style.fontSize=t.fontSize||'14px';document.querySelectorAll('.panel,.menu-group,.nav,.menu-toggle,.btn').forEach(el=>{el.style.borderStyle=t.borderStyle||'solid';el.style.borderColor=t.border||'#ead6d3';el.style.borderRadius=t.radius||'16px'});document.querySelectorAll('.nav span,.menu-toggle span').forEach(el=>{el.classList.toggle('aq-icon-badge',t.iconStyle==='rounded');el.classList.toggle('aq-icon-minimal',t.iconStyle==='minimal')});}
 function readThemeControls(){return {font:document.getElementById('themeFont')?.value,fontSize:document.getElementById('themeFontSize')?.value,primary:document.getElementById('themePrimary')?.value,surface:document.getElementById('themeSurface')?.value,border:document.getElementById('themeBorder')?.value,borderStyle:document.getElementById('themeBorderStyle')?.value,radius:document.getElementById('themeRadius')?.value,iconStyle:document.getElementById('themeIconStyle')?.value}}
