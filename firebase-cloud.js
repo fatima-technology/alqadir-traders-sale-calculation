@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import {
  getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,
- signOut,setPersistence,browserLocalPersistence,updateProfile,sendPasswordResetEmail,
+ signOut,setPersistence,browserLocalPersistence,browserSessionPersistence,updateProfile,sendPasswordResetEmail,
  updatePassword,reauthenticateWithCredential,EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
@@ -114,7 +114,7 @@ $('aqAuthTabRegister')?.addEventListener('click',()=>mode('register'));
 $('aqAuthGoRegister')?.addEventListener('click',()=>mode('register'));
 $('aqAuthGoLogin')?.addEventListener('click',()=>mode('login'));
 document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const i=$(b.dataset.toggle);if(i){i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'Show':'Hide';}}));
-$('aqAuthLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');loginFlow=true;busy('aqAuthLoginSubmit',true);try{await signInWithEmailAndPassword(auth,$('aqAuthLoginEmail').value.trim(),$('aqAuthLoginPassword').value);$('aqAuthLoginPassword').value='';}catch(x){loginFlow=false;authMessage(err(x));}finally{busy('aqAuthLoginSubmit',false);}});
+$('aqAuthLoginForm')?.addEventListener('submit',async e=>{e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');loginFlow=true;busy('aqAuthLoginSubmit',true);try{await setPersistence(auth,$('aqAuthRemember')?.checked?browserLocalPersistence:browserSessionPersistence);await signInWithEmailAndPassword(auth,$('aqAuthLoginEmail').value.trim(),$('aqAuthLoginPassword').value);$('aqAuthLoginPassword').value='';}catch(x){loginFlow=false;authMessage(err(x));}finally{busy('aqAuthLoginSubmit',false);}});
 $('aqAuthRegisterForm')?.addEventListener('submit',async e=>{
  e.preventDefault();clearMsg();if(!firebaseReady)return authMessage('Firebase connection unavailable.');
  const name=$('aqAuthFullName').value.trim(),email=$('aqAuthRegisterEmail').value.trim(),pw=$('aqAuthRegisterPassword').value,cp=$('aqAuthConfirmPassword').value;
@@ -123,7 +123,7 @@ $('aqAuthRegisterForm')?.addEventListener('submit',async e=>{
  if(pw!==cp)return authMessage('Password aur Confirm Password match nahi karte.');
  loginFlow=true;busy('aqAuthRegisterSubmit',true);
  try{
-  const c=await createUserWithEmailAndPassword(auth,email,pw);await updateProfile(c.user,{displayName:name});
+  await setPersistence(auth,$('aqAuthRemember')?.checked?browserLocalPersistence:browserSessionPersistence);const c=await createUserWithEmailAndPassword(auth,email,pw);await updateProfile(c.user,{displayName:name});
   if(c.user.uid===OWNER_UID){
    await setDoc(doc(dbCloud,'userProfiles',c.user.uid),{uid:c.user.uid,email:c.user.email,requestedName:name,displayName:name,status:'approved',role:'Owner',permissions:{all:true},createdAt:serverTimestamp(),approvedBy:OWNER_UID});
   }else{
@@ -136,7 +136,7 @@ $('aqAuthRegisterForm')?.addEventListener('submit',async e=>{
 $('aqAuthForgot')?.addEventListener('click',async()=>{clearMsg();const email=$('aqAuthLoginEmail').value.trim();if(!email)return authMessage('Pehle email enter karein.');try{await sendPasswordResetEmail(auth,email);authMessage('Password reset email bhej di gayi hai.','ok');}catch(e){authMessage(err(e));}});
 
 try{
- const app=initializeApp(firebaseConfig);auth=getAuth(app);dbCloud=getFirestore(app);await setPersistence(auth,browserLocalPersistence);firebaseReady=true;
+ const app=initializeApp(firebaseConfig);auth=getAuth(app);dbCloud=getFirestore(app);firebaseReady=true;
  window.AQ_FIREBASE={app,auth,db:dbCloud,connected:true};
  addOwnerPanel();
  onAuthStateChanged(auth,async user=>{
@@ -328,7 +328,7 @@ window.aqSendResetLink=async()=>{
  try{if(!currentUser)throw new Error('Pehle sign in karein.');await sendPasswordResetEmail(auth,currentUser.email);if(st){st.textContent='Reset link '+currentUser.email+' par bhej diya gaya hai.';st.style.color='#067647';}}
  catch(e){if(st){st.textContent=e.code?err(e):e.message;st.style.color='#b42318';}}
 };
-\n/* Minimal Refresh / Sync / Online status controls. Existing data and cloud engine remain unchanged. */
+/* Minimal Refresh / Sync / Online status controls. Existing data and cloud engine remain unchanged. */
 (()=>{
  const style=document.createElement('style');style.textContent=`#aqQuickSync{position:fixed;right:12px;bottom:14px;z-index:9499;display:flex;align-items:center;gap:7px;padding:8px 10px;background:#fff;border:1px solid #dbe2ea;border-radius:14px;box-shadow:0 5px 20px rgba(15,23,42,.15);font:600 12px system-ui;max-width:calc(100vw - 24px)}#aqQuickSync .aqqs-status{display:flex;align-items:center;gap:5px;white-space:nowrap;color:#475569}#aqQuickSync .aqqs-dot{width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block}#aqQuickSync.online .aqqs-dot{background:#16a34a}#aqQuickSync button{border:0;border-radius:8px;padding:8px 10px;background:#eaf0f7;color:#26384b;font-weight:750;cursor:pointer}#aqQuickSync button.sync{background:#167c45;color:#fff}#aqQuickSync button:disabled{opacity:.55;cursor:wait}#aqQuickSync .aqqs-time{display:none;color:#64748b;font-size:10px;font-weight:500}@media(min-width:700px){#aqQuickSync .aqqs-time{display:block}}@media(max-width:420px){#aqQuickSync{gap:5px;padding:6px}#aqQuickSync button{padding:7px 8px;font-size:11px}}`;document.head.appendChild(style);
  const bar=document.createElement('div');bar.id='aqQuickSync';bar.innerHTML=`<span class="aqqs-status"><i class="aqqs-dot"></i><span id="aqqsNet">Offline</span></span><span class="aqqs-time" id="aqqsLast">Last sync: —</span><button type="button" id="aqqsRefresh">↻ Refresh</button><button type="button" class="sync" id="aqqsSync">☁ Sync Now</button>`;document.body.appendChild(bar);
